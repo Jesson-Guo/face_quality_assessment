@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
 
     InitParam initParam = {};
     initParam.deviceId = 0;
-    initParam.modelPath = "/home/cd_mindx/FaceQualityAssessment/dataset/AFLW2000/FQA.om";
+    initParam.modelPath = "/home/cd_mindx/FaceQualityAssessment/FQA.om";
     FQA fqa;
     APP_ERROR ret = fqa.Init(initParam);
     if (ret != APP_ERR_OK) {

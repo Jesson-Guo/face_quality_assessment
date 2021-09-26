@@ -28,11 +28,18 @@
                 "resizeWidth": "96"
             },
             "factory": "mxpi_imageresize",
+            "next": "mxpi_transposeplugin0"
+        },
+        "mxpi_transposeplugin0": {
+            "props": {
+                "dataSource": "mxpi_imageresize0"
+            },
+            "factory": "mxpi_transposeplugin",
             "next": "mxpi_imagenormalize0"
         },
         "mxpi_imagenormalize0": {
             "props": {
-                "dataSource": "mxpi_imageresize0",
+                "dataSource": "mxpi_transposeplugin0",
                 "alpha": "0, 0, 0",
                 "beta": "255, 255, 255",
                 "dataType": "FLOAT32"
@@ -42,7 +49,7 @@
         },
         "mxpi_tensorinfer0": {
             "props": {
-                "dataSource": "mxpi_imageresize0",
+                "dataSource": "mxpi_imagenormalize0",
                 "modelPath": "../models/face_quality_assessment/FQA.om"
             },
             "factory": "mxpi_tensorinfer",

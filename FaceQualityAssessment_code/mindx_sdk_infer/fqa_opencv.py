@@ -167,8 +167,7 @@ def main(args):
         # 计算error
         eulgt = list(eulers_gt)
         for euler_id, _ in enumerate(eulers_ori):
-            eulori = eulers_ori[euler_id]
-            eulers_error_all[euler_id].append(abs(eulori - float(eulgt[euler_id])))
+            eulers_error_all[euler_id].append(abs(eulers_ori[euler_id] - float(eulgt[euler_id])))
         eye01 = kp_list[0]
         eye02 = kp_list[1]
         eye_dis = 1
@@ -179,11 +178,8 @@ def main(args):
             eye_dis = np.sqrt(np.square(abs(eye01[0] - eye02[0])) + np.square(abs(eye01[1] - eye02[1])))
         cur_error_list = []
         for i in range(5):
-            kp_coord_gt = kp_list[i]
-            kp_coord_model = kp_coord_ori[i]
-            if kp_coord_gt[0] != -1:
-                dis = np.sqrt(np.square(
-                    kp_coord_gt[0] - kp_coord_model[0]) + np.square(kp_coord_gt[1] - kp_coord_model[1]))
+            if kp_list[i][0] != -1:
+                dis = np.sqrt(np.square(kp_list[i][0] - kp_coord_ori[i][0]) + np.square(kp_list[i][1] - kp_coord_ori[i][1]))
                 kp_error_all[i].append(dis)
                 cur_error_list.append(dis)
         if cur_flag:

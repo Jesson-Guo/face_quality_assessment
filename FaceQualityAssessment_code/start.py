@@ -29,11 +29,23 @@ def main():
     args = parse_args()
     print("Training setting:", args)
     os.environ["DEVICE_ID"] = args.device_id
+    # 开始训练
+    train.run_train()
     # 拷贝数据集到cache目录
     os.makedirs("/cache/checkpoint_path", exist_ok=True)
-    mox.file.copy_parallel(args.data_url, "/cache/checkpoint_path")
-    config.checkpoint_url = args.data_url
+    print(args.train_url + "output")
+    mox.file.copy_parallel("/cache/train/output", "/cache/checkpoint_path")
+    # config.checkpoint_url = os.path.join(args.train_url + "output")
     print("模型转换")
+    print(config.train_url)
+    t = config.train_url.split("/")
+    t[-1] = "output"
+    config.train_url = ""
+    for s in t:
+        config.train_url += s + "/"
+
+    print(config.train_url)
+    # config.train_url = config.train_url[:-6]+"output/"
     export.run_export()
 
 
