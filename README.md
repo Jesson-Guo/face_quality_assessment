@@ -1,450 +1,477 @@
-# 交付件基本信息
+# Contents
 
-**发布者（Publisher）**：Huawei
+- [Face Quality Assessment Description](#face-quality-assessment-description)
+- [Model Architecture](#model-architecture)
+- [Dataset](#dataset)
+- [Environment Requirements](#environment-requirements)  
+- [Script Description](#script-description)
+    - [Script and Sample Code](#script-and-sample-code)
+    - [Running Example](#running-example)
+    - [Inference Process](#inference-process)
+        - [Export MindIR](#export-mindir)
+        - [Infer on Ascend](#infer-on-ascend)
+        - [Result](#result)
+- [Model Description](#model-description)
+    - [Performance](#performance)
+- [ModelZoo Homepage](#modelzoo-homepage)
 
-**应用领域（Application Domain）**：Aesthetics Assessment
+# [Face Quality Assessment Description](#contents)
 
-**版本（Version）**：1.1
+This is a Face Quality Assessment network based on Resnet12, with support for training and evaluation on Ascend910, GPU and CPU.
 
-**修改时间（Modified）**：2020.09.16
+ResNet (residual neural network) was proposed by Kaiming He and other four Chinese of Microsoft Research Institute. Through the use of ResNet unit, it successfully trained 152 layers of neural network, and won the championship in ilsvrc2015. The error rate on top 5 was 3.57%, and the parameter quantity was lower than vggnet, so the effect was very outstanding. Traditional convolution network or full connection network will have more or less information loss. At the same time, it will lead to the disappearance or explosion of gradient, which leads to the failure of deep network training. ResNet solves this problem to a certain extent. By passing the input information to the output, the integrity of the information is protected. The whole network only needs to learn the part of the difference between input and output, which simplifies the learning objectives and difficulties.The structure of ResNet can accelerate the training of neural network very quickly, and the accuracy of the model is also greatly improved. At the same time, ResNet is very popular, even can be directly used in the concept net network.
 
-**大小（Size）**：16 MB (ckpt)/8 MB (air)/4.3 MB (om)
+[Paper](https://arxiv.org/pdf/1512.03385.pdf):  Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun. "Deep Residual Learning for Image Recognition"
 
-**框架（Framework）**：MindSpore_1.3.0
+# [Model Architecture](#contents)
 
-**模型格式（Model Format）**：ckpt/air/om
+Face Quality Assessment uses a modified-Resnet12 network for performing feature extraction.
 
-**精度（Precision）**：Mixed/FP16
+# [Dataset](#contents)
 
-**处理器（Processor）**：昇腾910/昇腾310
+This network can recognize the euler angel of human head and 5 key points of human face.
 
-**应用级别（Categories）**：Released
+We use about 122K face images as training dataset and 2K as evaluating dataset in this example, and you can also use your own datasets or open source datasets (e.g. 300W-LP as training dataset, AFLW2000 as evaluating dataset)
 
-**描述（Description）：**基于MindSpore框架的FaceQualityAssessment人脸质量评估网络模型训练并保存模型，通过ATC工具转换，可在昇腾AI设备上运行
+- step 1: The training dataset should be saved in a txt file, which contains the following contents:
 
-# 概述
+    ```python
+    [PATH_TO_IMAGE]/1.jpg [YAW] [PITCH] [ROLL] [LEFT_EYE_CENTER_X] [LEFT_EYE_CENTER_Y] [RIGHT_EYE_CENTER_X] [RIGHT_EYE_CENTER_Y] [NOSE_TIP_X] [NOSE_TIP_Y] [MOUTH_LEFT_CORNER_X] [MOUTH_LEFT_CORNER_Y] [MOUTH_RIGHT_CORNER_X] [MOUTH_RIGHT_CORNER_Y]
+    [PATH_TO_IMAGE]/2.jpg [YAW] [PITCH] [ROLL] [LEFT_EYE_CENTER_X] [LEFT_EYE_CENTER_Y] [RIGHT_EYE_CENTER_X] [RIGHT_EYE_CENTER_Y] [NOSE_TIP_X] [NOSE_TIP_Y] [MOUTH_LEFT_CORNER_X] [MOUTH_LEFT_CORNER_Y] [MOUTH_RIGHT_CORNER_X] [MOUTH_RIGHT_CORNER_Y]
+    [PATH_TO_IMAGE]/3.jpg [YAW] [PITCH] [ROLL] [LEFT_EYE_CENTER_X] [LEFT_EYE_CENTER_Y] [RIGHT_EYE_CENTER_X] [RIGHT_EYE_CENTER_Y] [NOSE_TIP_X] [NOSE_TIP_Y] [MOUTH_LEFT_CORNER_X] [MOUTH_LEFT_CORNER_Y] [MOUTH_RIGHT_CORNER_X] [MOUTH_RIGHT_CORNER_Y]
+    ...
 
-## 简述
+    e.g. /home/train/1.jpg  -33.073415  -9.533774  -9.285695  229.802368  257.432800  289.186188  262.831543  271.241638  301.224426  218.571747  322.097321  277.498291  328.260376
 
-FaceQualityAssessment模型是一个基于 Resnet12 的人脸质量评估网络。
+    The label info are separated by '\t'.
+    Set -1 when the keypoint is not visible.
+    ```
 
-ResNet（残差神经网络）是由何开明等四位微软研究院中国人提出的。通过使用ResNet单元，成功训练了152层神经网络，在ilsvrc2015中获得冠军。 top 5的错误率为3.57%，参数量低于vggnet，效果非常突出。传统的卷积网络或全连接网络或多或少都会有信息丢失。同时会导致梯度消失或爆炸，从而导致深度网络训练失败。 ResNet 在一定程度上解决了这个问题。通过将输入信息传递到输出，信息的完整性得到保护。整个网络只需要学习输入和输出的差异部分，简化了学习目标和难度。ResNet的结构可以非常快地加速神经网络的训练，模型的准确率也大大提高。同时，ResNet 非常流行，甚至可以直接用在概念网中。
+- step 2: The directory structure of evaluating dataset is as follows:
 
-- 参考论文：
+    ```python
+          ├─ dataset
+            ├─ img1.jpg
+            ├─ img1.txt
+            ├─ img2.jpg
+            ├─ img2.txt
+            ├─ img3.jpg
+            ├─ img3.txt
+            ├─ ...
+    ```
 
-  [Paper](https://arxiv.org/pdf/1512.03385.pdf): Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun. "Deep Residual Learning for Image Recognition"
+    The txt file contains the following contents:
 
-- 参考实现：https://gitee.com/mindspore/mindspore/tree/master/model_zoo/research/cv/FaceQualityAssessment
+    ```python
+    [YAW] [PITCH] [ROLL] [LEFT_EYE_CENTER_X] [LEFT_EYE_CENTER_Y] [RIGHT_EYE_CENTER_X] [RIGHT_EYE_CENTER_Y] [NOSE_TIP_X] [NOSE_TIP_Y] [MOUTH_LEFT_CORNER_X] [MOUTH_LEFT_CORNER_Y] [MOUTH_RIGHT_CORNER_X] [MOUTH_RIGHT_CORNER_Y]
 
-通过Git获取对应commit_id的代码方法如下：
+    The label info are separated by ' '.
+    Set -1 when the keypoint is not visible.
+    ```
 
-```sh
-git clone {repository_url}     # 克隆仓库的代码
-cd {repository_name}           # 切换到模型的代码仓目录
-git checkout  {branch}         # 切换到对应分支
-git reset --hard ｛commit_id｝  # 代码设置到对应的commit_id
-cd ｛code_path｝                # 切换到模型代码所在路径，若仓库下只有该模型，则无需切换
+# [Environment Requirements](#contents)
+
+- Hardware(Ascend/GPU/CPU)
+    - Prepare hardware environment with Ascend/GPU/CPU processor.
+- Framework
+    - [MindSpore](https://www.mindspore.cn/install/en)
+- For more information, please check the resources below:
+    - [MindSpore tutorials](https://www.mindspore.cn/tutorials/en/master/index.html)
+    - [MindSpore Python API](https://www.mindspore.cn/docs/api/en/master/index.html)
+
+# [Script Description](#contents)
+
+## [Script and Sample Code](#contents)
+
+The entire code structure is as following:
+
+```text
+.
+└─ Face Quality Assessment
+  ├─ README.md
+  ├─ model_utils
+    ├─ __init__.py                          # module init file
+    ├─ config.py                            # Parse arguments
+    ├─ device_adapter.py                    # Device adapter for ModelArts
+    ├─ local_adapter.py                     # Local adapter
+    └─ moxing_adapter.py                    # Moxing adapter for ModelArts
+  ├─ scripts
+    ├─ run_standalone_train.sh              # launch standalone training(1p) in ascend
+    ├─ run_distribute_train.sh              # launch distributed training(8p) in ascend
+    ├─ run_eval.sh                          # launch evaluating in ascend
+    ├─ run_export.sh                        # launch exporting air model
+    ├─ run_standalone_train_gpu.sh          # launch standalone training(1p) in gpu
+    ├─ run_distribute_train_gpu.sh          # launch distributed training(8p) in gpu
+    ├─ run_eval_gpu.sh                      # launch evaluating in gpu
+    ├─ run_export_gpu.sh                    # launch exporting mindir model in gpu  
+    ├─ run_standalone_train_cpu.sh          # launch standalone training(1p) in cpu
+    ├─ run_eval_cpu.sh                      # launch evaluating in cpu
+    └─ run_export_cpu.sh                    # launch exporting mindir model in cpu
+  ├─ src
+    ├─ dataset.py                           # dataset loading and preprocessing for training
+    ├─ face_qa.py                           # network backbone
+    ├─ log.py                               # log function
+    ├─ loss_factory.py                      # loss function
+    └─ lr_generator.py                      # generate learning rate
+  ├─ default_config.yaml                    # Configurations
+  ├─ train.py                               # training scripts
+  ├─ eval.py                                # evaluation scripts
+  └─ export.py                              # export air model
 ```
 
-# 推理
+## [Running Example](#contents)
 
-## 模型转换
+### Train
 
-1. 准备模型文件。
+- Stand alone mode
 
-   上传模型训练生成的**.air**模型文件
+    ```bash
+    Ascend
 
-   上传**convert**目录
+    cd ./scripts
+    sh run_standalone_train.sh [TRAIN_LABEL_FILE] [USE_DEVICE_ID]
+    ```
 
-2. 模型转换。
+    ```bash
+    GPU
 
-   在当前容器目录执行
+    cd ./scripts
+    sh run_standalone_train_gpu.sh [TRAIN_LABEL_FILE]
+    ```
 
-   ```sh
-   bash air2om.sh ../data/model/FaceQualityAssessment.air FQA
-   ```
+    ```bash
+    CPU
 
-   其中：
-   - **../data/model/FaceQualityAssessment.air**文件为模型训练生成的.air文件，
-   - **FQA**为.om目标文件名。
+    cd ./scripts
+    sh run_standalone_train_cpu.sh [TRAIN_LABEL_FILE]
+    ```
 
-   **air2om.sh：**将air模型转成om模型
+    or (fine-tune)
 
-   ```shell
-   model_path=$1
-   output_model_name=$2
+    ```bash
+    Ascend
 
-   atc \
-   --input_format=NCHW \
-   --framework=1 \
-   --model=$model_path \
-   --output=$output_model_name \
-   --output_type=FP32 \
-   --soc_version=Ascend310
-   ```
+    cd ./scripts
+    sh run_standalone_train.sh [TRAIN_LABEL_FILE] [USE_DEVICE_ID] [PRETRAINED_BACKBONE]
+    ```
 
-## mxBase推理
-
-1. 编译工程。
-
-2. 修改配置文件。
-
-   修改CMakeLists.txt文件
-
-     ```
-     cmake_minimum_required(VERSION 3.14.0)
-
-     project(fqa_opencv)
-
-     # 将fqa_opencv修改为你的启动文件名。
-     set(TARGET fqa_opencv)
-
-     add_definitions(-DENABLE_DVPP_INTERFACE)
-     add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
-     add_definitions(-Dgoogle=mindxsdk_private)
-     add_compile_options(-std=c++11 -fPIE -fstack-protector-all -fPIC -Wall)
-     add_link_options(-Wl,-z,relro,-z,now,-z,noexecstack -s -pie)
-
-     if(NOT DEFINED ENV{ASCEND_HOME})
-         message(FATAL_ERROR "please define environment variable:ASCEND_HOME")
-     endif()
-     if(NOT DEFINED ENV{ASCEND_VERSION})
-         message(WARNING "please define environment variable:ASCEND_VERSION")
-     endif()
-     if(NOT DEFINED ENV{ARCH_PATTERN})
-         message(WARNING "please define environment variable:ARCH_PATTERN")
-     endif()
-     set(ACL_INC_DIR $ENV{ASCEND_HOME}/$ENV{ASCEND_VERSION}/$ENV{ARCH_PATTERN}/acllib/include)
-     set(ACL_LIB_DIR $ENV{ASCEND_HOME}/$ENV{ASCEND_VERSION}/$ENV{ARCH_PATTERN}/acllib/lib64)
-
-     set(MXBASE_ROOT_DIR $ENV{MX_SDK_HOME})
-     set(MXBASE_INC ${MXBASE_ROOT_DIR}/include)
-     set(MXBASE_LIB_DIR ${MXBASE_ROOT_DIR}/lib)
-     set(MXBASE_POST_LIB_DIR ${MXBASE_ROOT_DIR}/lib/modelpostprocessors)
-     set(MXBASE_POST_PROCESS_DIR ${MXBASE_ROOT_DIR}/include/MxBase/postprocess/include)
-
-     if(DEFINED ENV{MXSDK_OPENSOURCE_DIR})
-         set(OPENSOURCE_DIR ${ENV{MXSDK_OPENSOURCE_DIR})
-     else()
-         set(OPENSOURCE_DIR ${MXBASE_ROOT_DIR}/opensource)
-     endif()
-
-     include_directories(${ACL_INC_DIR})
-     include_directories(${OPENSOURCE_DIR}/include)
-     include_directories(${OPENSOURCE_DIR}/include/opencv4)
-
-     include_directories(${MXBASE_INC})
-     include_directories(${MXBASE_POST_PROCESS_DIR})
-
-     link_directories(${ACL_LIB_DIR})
-     link_directories(${OPENSOURCE_DIR}/lib)
-     link_directories(${MXBASE_LIB_DIR})
-     link_directories(${MXBASE_POST_LIB_DIR})
-
-     # 将FQA.cpp修改为对应的cpp文件。
-     add_executable(${TARGET} main.cpp FQA.cpp)
-     target_link_libraries(${TARGET} glog cpprest mxbase opencv_world stdc++fs)
-
-     install(TARGETS ${TARGET} RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/)
-     ```
-
-3. 运行推理服务。
-
-   解压**FaceQualityAssessment/infer/data/input**目录下的**AFLW2000.zip**数据集到**AFLW2000**
-
-   执行**build.sh**
-
-   ```sh
-   bash build.sh ../data/input/AFLW2000 ../convert/FQA.om
-   ```
-
-   其中：
-   - **../data/input/AFLW2000**为数据集所在位置，
-   - **../convert/FQA.om**为om模型文件所在位置。
-
-   **build.sh：**
-
-   ```shell
-   export ASCEND_HOME=/usr/local/Ascend
-   export ASCEND_VERSION=nnrt/latest
-   export ARCH_PATTERN=.
-   export LD_LIBRARY_PATH=${MX_SDK_HOME}/lib/modelpostprocessors:${LD_LIBRARY_PATH}
-
-   dataset_path=$1
-   model_path=$2
-
-   cmake -S . -B build
-   make -C ./build -j
-
-   ./build/fqa_opencv $dataset_path $model_path
-   ```
-
-4. 观察结果。
-
-   -- The C compiler identification is GNU 7.5.0
-   -- The CXX compiler identification is GNU 7.5.0
-   -- Check for working C compiler: /usr/bin/cc
-   -- Check for working C compiler: /usr/bin/cc -- works
-   ...
-   Scanning dependencies of target fqa_opencv
-   make[2]: Leaving directory '/home/cd_mindx/FaceQualityAssessment/infer/mxbase/build'
-   make[2]: Entering directory '/home/cd_mindx/FaceQualityAssessment/infer/mxbase/build'
-   [ 33%] Building CXX object CMakeFiles/fqa_opencv.dir/src/main.cpp.o
-   ...
-   I0922 13:10:11.389950 34047 ModelInferenceProcessor.cpp:22] Begin to ModelInferenceProcessor init
-   I0922 13:10:11.424309 34047 ModelInferenceProcessor.cpp:69] End to ModelInferenceProcessor init
-   ========== 5 keypoints average err: [3.30475, 3.7926, 3.62504, 3.12129, 2.78628]
-   ========== 3 eulers average err: [21.4818, 15.8031, 17.0047]
-   IPN of 5 keypoints: 18.2403
-   MAE of elur: 18.0966
-   ...
-
-   **推理结果为：**
-
-   ========== 5 keypoints average err: [3.30475, 3.7926, 3.62504, 3.12129, 2.78628]
-   ========== 3 eulers average err: [21.4818, 15.8031, 17.0047]
-   IPN of 5 keypoints: 18.2403
-   MAE of elur: 18.0966
-
-## MindX SDK推理
-
-修改配置文件。
-
-1. 修改pipeline文件
-
-   ```pipeline
-   {
-       "face_quality_assessment": {
-           "stream_config": {
-               "deviceId": "0"
-           },
-           "appsrc0": {
-               "props": {
-                   "blocksize": "4096000"
-               },
-               "factory": "appsrc",
-               "next": "mxpi_imagedecoder0"
-           },
-           "mxpi_imagedecoder0": {
-               "props": {
-                   "cvProcessor": "opencv",
-                   "outputDataFormat": "RGB",
-                   "dataType": "float32"
-               },
-               "factory": "mxpi_imagedecoder",
-               "next": "mxpi_imageresize0"
-           },
-           "mxpi_imageresize0": {
-               "props": {
-                   "cvProcessor": "opencv",
-                   "resizeType": "Resizer_Stretch",
-                   "dataSource": "mxpi_imagedecoder0",
-                   "resizeHeight": "96",
-                   "resizeWidth": "96"
-               },
-               "factory": "mxpi_imageresize",
-               "next": "mxpi_transposeplugin0"
-           },
-           "mxpi_transposeplugin0": {
-               "props": {
-                   "dataSource": "mxpi_imageresize0"
-               },
-               "factory": "mxpi_transposeplugin",
-               "next": "mxpi_imagenormalize0"
-           },
-           "mxpi_imagenormalize0": {
-               "props": {
-                   "dataSource": "mxpi_transposeplugin0",
-                   "alpha": "0, 0, 0",
-                   "beta": "255, 255, 255",
-                   "dataType": "FLOAT32"
-               },
-               "factory": "mxpi_imagenormalize",
-               "next": "mxpi_tensorinfer0"
-           },
-           "mxpi_tensorinfer0": {
-               "props": {
-                   "dataSource": "mxpi_imagenormalize0",
-                   "modelPath": "../convert/FQA.om"
-               },
-               "factory": "mxpi_tensorinfer",
-               "next": "mxpi_dumpdata0"
-           },
-           "mxpi_dumpdata0": {
-               "props": {
-                   "requiredMetaDataKeys": "mxpi_tensorinfer0"
-               },
-               "factory": "mxpi_dumpdata",
-               "next": "appsink0"
-           },
-           "appsink0": {
-               "props": {
-                   "blocksize": "4096000"
-               },
-               "factory": "appsink"
-           }
-       }
-   }
-   ```
-
-   其中：
-
-   修改插件**mxpi_tensorinfer0**中的 **"modelPath": "../models/face_quality_assessment/FQA.omom"**，将**modelPath**修改为对应的om文件路径。
-   - **mxpi_transposeplugin0**为自己编译生成的插件，修改插件**mxpi_transposeplugin0**中的 **"dataSource": "mxpi_imageresize0"**，将**mxpi_imageresize0**修改为上游插件名，默认为**mxpi_imageresize0**。
-
-运行推理服务。
-
-1. 进入sdk/目录
-
-2. 执行推理。
-
-   ```sh
-   bash run.sh ../data/input/AFLW2000 ../data/config/fqa.pipeline
-   ```
-
-   其中：
-
-   **../data/input/AFLW2000**为数据集所在位置，
-   **../data/config/fqa.pipeline**为pipeline文件所在位置。
-
-   **run.sh：**完成**自定义插件的编译**以及执行**mindx sdk推理**，自定义插件位于**util/plugins**目录下
-
-   ```shell
-   set -e
-
-   # Simple log helper functions
-   info() { echo -e "\033[1;34m[INFO ][MxStream] $1\033[1;37m" ; }
-   warn() { echo >&2 -e "\033[1;31m[WARN ][MxStream] $1\033[1;37m" ; }
-
-   export MX_SDK_HOME=/home/data/cd_mindx/mxManufacture-2.0.2/
-   export LD_LIBRARY_PATH=${MX_SDK_HOME}/lib:${MX_SDK_HOME}/opensource/lib:${MX_SDK_HOME}/opensource/lib64:/usr/local/Ascend/ascend-toolkit/latest/acllib/lib64:${LD_LIBRARY_PATH}
-   export GST_PLUGIN_SCANNER=${MX_SDK_HOME}/opensource/libexec/gstreamer-1.0/gst-plugin-scanner
-   export GST_PLUGIN_PATH=${MX_SDK_HOME}/opensource/lib/gstreamer-1.0:${MX_SDK_HOME}/lib/plugins
-
-   dataset_path=$1
-   pipeline_path=$2
-
-   #to set PYTHONPATH, import the StreamManagerApi.py
-   export PYTHONPATH=$PYTHONPATH:${MX_SDK_HOME}/python
-
-   if [ ! -d infer_result ] ;then
-       mkdir infer_result;
-   fi
-
-   # compile plugin program
-   if [ -d ../util/plugins/build ] ;then
-       rm -rf ../util/plugins/build;
-   fi
-   cmake -S ../util/plugins -B ../util/plugins/build
-   make -C ../util/plugins/build -j
-
-   if [ ! -d $MX_SDK_HOME/lib/plugins/ ] ;then
-       echo "distance plugin directory not exists";
-       exit 0;
-   fi
-   if [ -f ../util/plugins/build/libmxpi_transposeplugin.so ] ;then
-       echo "copy file libmxpi_transposeplugin.so to plugins";
-       cp ../util/plugins/build/libmxpi_transposeplugin.so $MX_SDK_HOME/lib/plugins/;
-       echo "copy successfully";
-   fi
-
-   echo "start infer...";
-   python3.7 -u fqa_opencv.py \
-   --dataset=$dataset_path \
-   --pipeline=$pipeline_path \
-   --output=infer_result > infer.log 2>&1
-   exit 0
-
-
-   python3.7 -u fqa_opencv.py --dataset=$dataset_path --pipeline=$pipeline_path --output=infer_result > infer.log 2>&1
-   ```
-
-3. 查看推理结果。
-
-   ```sh
-   cat infer.log
-   ```
-
-   **推理结果为：**
-
-   ========== 5 keypoints average err:['3.311', '3.976', '3.845', '3.156', '2.939']
-   ========== 3 eulers average err:['21.482', '15.809', '17.008']
-   ========== IPN of 5 keypoints:18.986170137889545
-   ========== MAE of elur:18.099490226755503
-
-执行精度测试。
-
-查看性能结果。
-
-- 打开性能统计开关。将“enable_ps”参数设置为true，“ps_interval_time”参数设置为6
-
-  ```sh
-  vim /home/HwHiAiUser/mxManufacture-2.0.2/config/sdk.conf执行run.sh脚本。
-  ```
-
-- 执行推理。
-
-- 在日志目录“/home/HwHiAiUser/mxManufacture-2.0.2/logs/”查看性能统计结果。
-
-  performance—statistics.log.e2e.xxx
-  performance—statistics.log.plugin.xxx
-  performance—statistics.log.tpr.xxx
-
-# 在ModelArts上应用
-
-## 创建OBS桶
-
-1. 创建桶。
-
-   登录[OBS管理控制台](https://storage.huaweicloud.com/obs)，创建OBS桶。具体请参见[创建桶](https://support.huaweicloud.com/usermanual-obs/obs_03_0306.html)章节。
-
-2. 创建文件夹存放数据。
-
-   创建用于存放数据的文件夹，具体请参见[新建文件夹](https://support.huaweicloud.com/usermanual-obs/obs_03_0316.html)章节。
-
-   目录结构说明：
-
-   ![image-20210917112951879](C:\Users\Jesson\AppData\Roaming\Typora\typora-user-images\image-20210917112951879.png)
-
-   code：存放训练脚本目录，上传**FaceQualityAssessment**中的代码，上传modelarts中的**start.py**到code目录下
-   dataset：存放训练数据集目录，将**FaceQualityAssessment\infer\data\input**目录下的数据上传到dataset
-   logs：存放训练日志目录
-   model：训练生成ckpt模型以及om模型目录
-
-## 创建训练作业
-
-1. 使用华为云帐号登录[ModelArts管理控制台](https://console.huaweicloud.com/modelarts)，在左侧导航栏中选择“训练管理 > 训练作业”，默认进入“训练作业”列表。
-
-2. 在训练作业列表中，单击左上角“创建”，进入“创建训练作业”页面。
-
-3. 在创建训练作业页面，填写训练作业相关参数，然后单击“下一步”。
-
-   1. 如果没有算法，则提前创建算法，具体请参见[创建算法](https://support.huaweicloud.com/engineers-modelarts/modelarts_23_0233.html)章节。启动文件为**start.py**。
-
-      ![image-20210923142216957](C:\Users\Jesson\AppData\Roaming\Typora\typora-user-images\image-20210923142216957.png)
-
-   2. 如果已经有创建好的算法，则选择一个算法，填写相关输入输出路径
-
-      ![image-20210923135019927](C:\Users\Jesson\AppData\Roaming\Typora\typora-user-images\image-20210923135019927.png)
-
-   3. 选择资源类型为**“Ascend”**；节点个数选择**1*Ascend**；选择日志输出路径
-
-      ![image-20210917114005814](C:\Users\Jesson\AppData\Roaming\Typora\typora-user-images\image-20210917114005814.png)
-
-   4. 在“规格确认”页面，确认填写信息无误后，单击“提交”，完成训练作业的创建。
-
-4. 训练作业一般需要运行一段时间，根据您选择的数据量和资源不同，训练时间将耗时几分钟到几十分钟不等。
-
-## 查看训练任务日志
-
-训练完成后，在log文件夹下查看本次训练的日志。
-
-![image-20210917114516252](C:\Users\Jesson\AppData\Roaming\Typora\typora-user-images\image-20210917114516252.png)
-
-训练成功后，在model文件夹下可以查看最终的日志文件。
-
-## 查看冻结模型
-
-训练完成后，在model/output文件夹下查看冻结的模型。
-
-![image-20210923142943779](C:\Users\Jesson\AppData\Roaming\Typora\typora-user-images\image-20210923142943779.png)
+    ```bash
+    GPU
+
+    cd ./scripts
+    sh run_standalone_train_gpu.sh [TRAIN_LABEL_FILE] [PRETRAINED_BACKBONE]
+    ```
+
+    ```bash
+    CPU
+
+    cd ./scripts
+    sh run_standalone_train_cpu.sh [TRAIN_LABEL_FILE] [PRETRAINED_BACKBONE]
+    ```
+
+    for example, on Ascend:
+
+    ```bash
+    cd ./scripts
+    sh run_standalone_train.sh /home/train.txt 0 /home/a.ckpt
+    ```
+
+- Distribute mode (recommended)
+
+    ```bash
+    Ascend
+
+    cd ./scripts
+    sh run_distribute_train.sh [TRAIN_LABEL_FILE] [RANK_TABLE]
+    ```
+
+    ```bash
+    GPU
+
+    cd ./scripts
+    sh run_distribute_train_gpu.sh [DEVICE_NUM] [VISIBLE_DEVICES(0,1,2,3,4,5,6,7)] [TRAIN_LABEL_FILE]
+    ```
+
+    or (fine-tune)
+
+    ```bash
+    Ascend
+
+    cd ./scripts
+    sh run_distribute_train.sh [TRAIN_LABEL_FILE] [RANK_TABLE] [PRETRAINED_BACKBONE]
+    ```
+
+    ```bash
+    GPU
+
+    cd ./scripts
+    sh run_distribute_train_gpu.sh [DEVICE_NUM] [VISIBLE_DEVICES(0,1,2,3,4,5,6,7)] [TRAIN_LABEL_FILE] [PRETRAINED_BACKBONE]
+    ```
+
+    for example, on Ascend:
+
+    ```bash
+    cd ./scripts
+    sh run_distribute_train.sh /home/train.txt ./rank_table_8p.json /home/a.ckpt
+    ```
+
+You will get the loss value of each step as following in "./output/[TIME]/[TIME].log" or "./scripts/device0/train.log":
+
+```python
+epoch[0], iter[0], loss:39.206444, 5.31 imgs/sec
+epoch[0], iter[10], loss:38.200620, 10423.44 imgs/sec
+epoch[0], iter[20], loss:31.253260, 13555.87 imgs/sec
+epoch[0], iter[30], loss:26.349678, 8762.34 imgs/sec
+epoch[0], iter[40], loss:23.469613, 7848.85 imgs/sec
+
+...
+epoch[39], iter[19080], loss:1.881406, 7620.63 imgs/sec
+epoch[39], iter[19090], loss:2.091236, 7601.15 imgs/sec
+epoch[39], iter[19100], loss:2.140766, 8088.52 imgs/sec
+epoch[39], iter[19110], loss:2.111101, 8791.05 imgs/sec
+```
+
+- ModelArts (If you want to run in modelarts, please check the official documentation of [modelarts](https://support.huaweicloud.com/modelarts/), and you can start training as follows)
+
+    ```bash
+    # Train 8p on ModelArts with Ascend
+    # (1) Perform a or b.
+    #       a. Set "enable_modelarts=True" on default_config.yaml file.
+    #          Set "is_distributed=1" on default_config.yaml file.
+    #          Set "per_batch_size=32" on default_config.yaml file.
+    #          Set "train_label_file='/cache/data/face_quality_dataset/qa_300W_LP_train.txt'" on default_config.yaml file.
+    #          (option) Set "checkpoint_url='s3://dir_to_trained_ckpt/'" on default_config.yaml file if load pretrain.
+    #          (option) Set "pretrained='/cache/checkpoint_path/model.ckpt'" on default_config.yaml file if load pretrain.
+    #          Set other parameters on default_config.yaml file you need.
+    #       b. Add "enable_modelarts=True" on the website UI interface.
+    #          Add "is_distributed=1" on the website UI interface.
+    #          Add "per_batch_size=32" on the website UI interface.
+    #          Add "train_label_file=/cache/data/face_quality_dataset/qa_300W_LP_train.txt" on the website UI interface.
+    #          (option) Add "checkpoint_url=s3://dir_to_trained_ckpt/" on the website UI interface if load pretrain.
+    #          (option) Add "pretrained=/cache/checkpoint_path/model.ckpt" on the website UI interface if load pretrain.
+    #          Add other parameters on the website UI interface.
+    # (2) (option) Upload or copy your pretrained model to S3 bucket if load pretrain.
+    # (3) Modify imagepath on "/dir_to_your_dataset/qa_300W_LP_train.txt" file.
+    # (4) Upload a zip dataset to S3 bucket. (you could also upload the origin dataset, but it can be so slow.)
+    # (5) Set the code directory to "/path/FaceQualityAssessment" on the website UI interface.
+    # (6) Set the startup file to "train.py" on the website UI interface.
+    # (7) Set the "Dataset path" and "Output file path" and "Job log path" to your path on the website UI interface.
+    # (8) Create your job.
+    #
+    # Train 1p on ModelArts with Ascend
+    # (1) Perform a or b.
+    #       a. Set "enable_modelarts=True" on default_config.yaml file.
+    #          Set "is_distributed=0" on default_config.yaml file.
+    #          Set "per_batch_size=256" on default_config.yaml file.
+    #          Set "train_label_file='/cache/data/face_quality_dataset/qa_300W_LP_train.txt'" on default_config.yaml file.
+    #          (option) Set "checkpoint_url='s3://dir_to_trained_ckpt/'" on default_config.yaml file if load pretrain.
+    #          (option) Set "pretrained='/cache/checkpoint_path/model.ckpt'" on default_config.yaml file if load pretrain.
+    #          Set other parameters on default_config.yaml file you need.
+    #       b. Add "enable_modelarts=True" on the website UI interface.
+    #          Add "is_distributed=0" on the website UI interface.
+    #          Add "per_batch_size=256" on the website UI interface.
+    #          Add "train_label_file=/cache/data/face_quality_dataset/qa_300W_LP_train.txt" on the website UI interface.
+    #          (option) Add "checkpoint_url=s3://dir_to_trained_ckpt/" on the website UI interface if load pretrain.
+    #          (option) Add "pretrained=/cache/checkpoint_path/model.ckpt" on the website UI interface if load pretrain.
+    #          Add other parameters on the website UI interface.
+    # (2) (option) Upload or copy your pretrained model to S3 bucket if load pretrain.
+    # (3) Modify imagepath on "/dir_to_your_dataset/qa_300W_LP_train.txt" file.
+    # (4) Upload a zip dataset to S3 bucket. (you could also upload the origin dataset, but it can be so slow.)
+    # (5) Set the code directory to "/path/FaceQualityAssessment" on the website UI interface.
+    # (6) Set the startup file to "train.py" on the website UI interface.
+    # (7) Set the "Dataset path" and "Output file path" and "Job log path" to your path on the website UI interface.
+    # (8) Create your job.
+    #
+    # Eval 1p on ModelArts with Ascend
+    # (1) Perform a or b.
+    #       a. Set "enable_modelarts=True" on default_config.yaml file.
+    #          Set "eval_dir='/cache/data/face_quality_dataset/AFLW2000'" on default_config.yaml file.
+    #          Set "checkpoint_url='s3://dir_to_trained_ckpt/'" on default_config.yaml file.
+    #          Set "pretrained='/cache/checkpoint_path/model.ckpt'" on default_config.yaml file.
+    #          Set other parameters on default_config.yaml file you need.
+    #       b. Add "enable_modelarts=True" on the website UI interface.
+    #          Add "eval_dir=/cache/data/face_quality_dataset/AFLW2000" on the website UI interface.
+    #          Add "checkpoint_url=s3://dir_to_trained_ckpt/" on the website UI interface.
+    #          Add "pretrained=/cache/checkpoint_path/model.ckpt" on the website UI interface.
+    #          Add other parameters on the website UI interface.
+    # (2) Upload or copy your trained model to S3 bucket.
+    # (3) Upload a zip dataset to S3 bucket. (you could also upload the origin dataset, but it can be so slow.)
+    # (4) Set the code directory to "/path/FaceQualityAssessment" on the website UI interface.
+    # (5) Set the startup file to "eval.py" on the website UI interface.
+    # (6) Set the "Dataset path" and "Output file path" and "Job log path" to your path on the website UI interface.
+    # (7) Create your job.
+    #
+    # Export 1p on ModelArts with Ascend
+    # (1) Perform a or b.
+    #       a. Set "enable_modelarts=True" on default_config.yaml file.
+    #          Set "batch_size=8" on default_config.yaml file.
+    #          Set "checkpoint_url='s3://dir_to_trained_ckpt/'" on default_config.yaml file.
+    #          Set "pretrained='/cache/checkpoint_path/model.ckpt'" on default_config.yaml file.
+    #          Set other parameters on default_config.yaml file you need.
+    #       b. Add "enable_modelarts=True" on the website UI interface.
+    #          Add "batch_size=8" on the website UI interface.
+    #          Add "checkpoint_url=s3://dir_to_trained_ckpt/" on the website UI interface.
+    #          Add "pretrained=/cache/checkpoint_path/model.ckpt" on the website UI interface.
+    #          Add other parameters on the website UI interface.
+    # (2) Upload or copy your trained model to S3 bucket.
+    # (3) Set the code directory to "/path/FaceQualityAssessment" on the website UI interface.
+    # (4) Set the startup file to "export.py" on the website UI interface.
+    # (5) Set the "Dataset path" and "Output file path" and "Job log path" to your path on the website UI interface.
+    # (6) Create your job.
+    ```
+
+### Evaluation
+
+```bash
+Ascend
+
+cd ./scripts
+sh run_eval.sh [EVAL_DIR] [USE_DEVICE_ID] [PRETRAINED_BACKBONE]
+```
+
+```bash
+GPU
+
+cd ./scripts
+sh run_eval_gpu.sh [EVAL_DIR] [PRETRAINED_BACKBONE]
+```
+
+```bash
+CPU
+
+cd ./scripts
+sh run_eval_cpu.sh [EVAL_DIR] [PRETRAINED_BACKBONE]
+```
+
+for example, on Ascend:
+
+```bash
+cd ./scripts
+sh run_eval.sh /home/eval/ 0 /home/a.ckpt
+```
+
+You will get the result as following in "./scripts/device0/eval.log" or txt file in [PRETRAINED_BACKBONE]'s folder:
+
+```python
+5 keypoints average err:['4.069', '3.439', '4.001', '3.206', '3.413']
+3 eulers average err:['21.667', '15.627', '16.770']
+IPN of 5 keypoints:19.57019303768714
+MAE of elur:18.021210976971098
+```
+
+## [Inference Process](#contents)
+
+### [Export MindIR](#contents)
+
+```shell
+python export.py --pretrained [CKPT_PATH] --batch_size 1 --file_name [FILE_NAME] --file_format [FILE_FORMAT]
+```
+
+The ckpt_file parameter is required,
+`batch_size` should be set to 1
+`pretrained` is the ckpt file path referenced
+`EXPORT_FORMAT` should be in ["AIR", "MINDIR"]
+
+for example, on Ascend:
+
+```bash
+python export.py --pretrained ./0-1_19000.ckpt --batch_size 1 --file_name faq.mindir --file_format MINDIR
+```
+
+### [Infer on Ascend310](#contents)
+
+Before performing inference, the mindir file must be exported by `export.py` script.
+Current batch_Size can only be set to 1.
+
+```shell
+# Ascend310 inference
+bash run_infer_310.sh [MINDIR_PATH] [DATA_PATH] [DEVICE_ID]
+```
+
+- `DATA_PATH` is mandatory, and must specify original data path.
+- `DEVICE_ID` is optional, default value is 0.
+
+for example, on Ascend:
+
+```bash
+cd ./scripts
+sh run_infer_310.sh ../fqa.mindir ../face_quality_dataset/ASLW2000 0
+```
+
+### [Result](#contents)
+
+Inference result is saved in current path, you can find result like this in acc.log file.
+
+```bash
+5 keypoints average err:['3.399', '4.320', '3.927', '3.109', '3.379']
+3 eulers average err:['21.192', '15.342', '16.559']
+IPN of 5 keypoints:20.30505629501458
+MAE of elur:17.69762644062826
+```
+
+### Convert model
+
+If you want to infer the network on Ascend 310, you should convert the model to AIR:
+
+```bash
+Ascend
+
+cd ./scripts
+sh run_export.sh [BATCH_SIZE] [USE_DEVICE_ID] [PRETRAINED_BACKBONE]
+```
+
+Or if you would like to convert your model to MINDIR file on GPU or CPU:
+
+```bash
+GPU
+
+cd ./scripts
+sh run_export_gpu.sh [PRETRAINED_BACKBONE] [BATCH_SIZE] [FILE_NAME](optional)
+```
+
+```bash
+CPU
+
+cd ./scripts
+sh run_export_cpu.sh [PRETRAINED_BACKBONE] [BATCH_SIZE] [FILE_NAME](optional)
+```
+
+# [Model Description](#contents)
+
+## [Performance](#contents)
+
+### Training Performance
+
+| Parameters                 | Ascend                                                     | CPU                                           | GPU                                           |
+| -------------------------- | ---------------------------------------------------------- | --------------------------------------------  | --------------------------------------------  |
+| Model Version              | V1                                                         | V1                                            | V1                                            |
+| Resource                   | Ascend 910; CPU 2.60GHz, 192cores; Memory 755G; OS Euler2.8| Intel(R) Xeon(R) CPU E5-2690 v4               | NV SMX2 V100-32G                              |
+| Uploaded Date              | 09/30/2020 (month/day/year)                                | 05/14/2021  (month/day/year)                  | 07/06/2021  (month/day/year)                  |
+| MindSpore Version          | 1.0.0                                                      | 1.2.0                                         | 1.3.0                                         |
+| Dataset                    | 122K images                                                | 122K images                                   | 122K images                                   |
+| Training Parameters        | epoch=40, batch_size=32, momentum=0.9, lr=0.02             | epoch=40, batch_size=32, momentum=0.9, lr=0.02| epoch=40, batch_size=32, momentum=0.9, lr=0.02|
+| Optimizer                  | Momentum                                                   | Momentum                                      | Momentum                                      |
+| Loss Function              | MSELoss, Softmax Cross Entropy                             | MSELoss, Softmax Cross Entropy                | MSELoss, Softmax Cross Entropy                |
+| Outputs                    | probability and point                                      | probability and point                         | probability and point                         |
+| Speed                      | 1pc: 200-240 ms/step; 8pcs: 35-40 ms/step                  | 1pc: 6 s/step                                 | 1pc: 71ms/step, 8pcs: 40ms/step               |
+| Total time                 | 1ps: 2.5 hours; 8pcs: 0.5 hours                            | 1ps: 32 hours                                 | 1ps: 0.5h, 8pcs: 0.25h                        |
+| Checkpoint for Fine tuning | 16M (.ckpt file)                                           | 16M (.ckpt file)                              |
+
+### Evaluation Performance
+
+| Parameters          | Ascend                        | CPU                             | GPU                             |
+| ------------------- | ----------------------------- | ------------------------------- | ------------------------------- |
+| Model Version       | V1                            | V1                              | V1                              |
+| Resource            | Ascend 910; OS Euler2.8       | Intel(R) Xeon(R) CPU E5-2690 v4 | NV SMX2 V100-32G                |
+| Uploaded Date       | 09/30/2020 (month/day/year)   | 05/14/2021  (month/day/year)    | 07/06/2021  (month/day/year)    |
+| MindSpore Version   | 1.0.0                         | 1.2.0                           | 1.3.0                           |
+| Dataset             | 2K images                     | 2K images                       | 2K images                       |
+| batch_size          | 256                           | 256                             | 256                             |
+| Outputs             | IPN, MAE                      | IPN, MAE                        | IPN, MAE                        |
+| Accuracy            | 8 pcs: IPN of 5 keypoints:19.5| 1 pcs: IPN of 5 keypoints:20.09 | 8 pcs: IPN of 5 keypoints:19.29 |
+|                     | 8 pcs: MAE of elur:18.02      | 1 pcs: MAE of elur:18.23        | 8 pcs: MAE of elur:18.04        |
+| Model for inference | 16M (.ckpt file)              | 16M (.ckpt file)                | 16M (.ckpt file)                |
+
+# [ModelZoo Homepage](#contents)
+
+Please check the official [homepage](https://gitee.com/mindspore/mindspore/tree/master/model_zoo).
