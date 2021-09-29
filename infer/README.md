@@ -1,28 +1,27 @@
 模型交付件模板-众智
 
--   [交付件基本信息](#交付件基本信息.md)
--   [概述](#概述.md)
-    -   [简述](#简述.md)
-    -   [默认配置](#默认配置.md)
-    -   [支持特性](#支持特性.md)
--   [准备工作](#准备工作.md)
-    -   [推理环境准备](#推理环境准备.md)
-    -   [源码介绍](#源码介绍.md)
--   [推理](#推理.md)
-    -   [准备推理数据](#准备推理数据.md)
-    -   [模型转换](#模型转换.md)
-    -   [mxBase推理](#mxBase推理.md)
-    -   [MindX SDK推理](#MindX-SDK推理.md)
--   [在ModelArts上应用](#在ModelArts上应用.md)
-    -   [上传自定义镜像（适用于PyTorch）](#上传自定义镜像（适用于PyTorch）.md)
-    -   [创建OBS桶](#创建OBS桶.md)
-    -   [创建算法（适用于MindSpore和TensorFlow）](#创建算法（适用于MindSpore和TensorFlow）.md)
-    -   [创建训练作业](#创建训练作业.md)
-    -   [查看训练任务日志](#查看训练任务日志.md)
-    -   [迁移学习](#迁移学习.md)
+- [交付件基本信息](#交付件基本信息.md)
+- [概述](#概述.md)
+    - [简述](#简述.md)
+    - [默认配置](#默认配置.md)
+    - [支持特性](#支持特性.md)
+- [准备工作](#准备工作.md)
+    - [推理环境准备](#推理环境准备.md)
+    - [源码介绍](#源码介绍.md)
+- [推理](#推理.md)
+    - [准备推理数据](#准备推理数据.md)
+    - [模型转换](#模型转换.md)
+    - [mxBase推理](#mxBase推理.md)
+    - [MindX SDK推理](#MindX-SDK推理.md)
+- [在ModelArts上应用](#在ModelArts上应用.md)
+    - [上传自定义镜像（适用于PyTorch）](#上传自定义镜像（适用于PyTorch）.md)
+    - [创建OBS桶](#创建OBS桶.md)
+    - [创建算法（适用于MindSpore和TensorFlow）](#创建算法（适用于MindSpore和TensorFlow）.md)
+    - [创建训练作业](#创建训练作业.md)
+    - [查看训练任务日志](#查看训练任务日志.md)
+    - [迁移学习](#迁移学习.md)
 
 ## 交付件基本信息
-
 
 **发布者（Publisher）**：Huawei
 
@@ -46,21 +45,19 @@
 
 **描述（Description）**：基于MindSpore框架的FaceQualityAssessment人脸质量评估网络模型训练并保存模型，通过ATC工具转换，可在昇腾AI设备上运行
 
-
 ## 概述
 
--   **[简述](#简述.md)**  
+- **[简述](#简述.md)**  
 
--   **[默认配置](#默认配置.md)**  
+- **[默认配置](#默认配置.md)**  
 
--   **[支持特性](#支持特性.md)**  
+- **[支持特性](#支持特性.md)**  
 
 ### 简述
 
 FaceQualityAssessment模型是一个基于 Resnet12 的人脸质量评估网络。
 
 ResNet（残差神经网络）是由何开明等四位微软研究院中国人提出的。通过使用ResNet单元，成功训练了152层神经网络，在ilsvrc2015中获得冠军。 top 5的错误率为3.57%，参数量低于vggnet，效果非常突出。传统的卷积网络或全连接网络或多或少都会有信息丢失。同时会导致梯度消失或爆炸，从而导致深度网络训练失败。 ResNet 在一定程度上解决了这个问题。通过将输入信息传递到输出，信息的完整性得到保护。整个网络只需要学习输入和输出的差异部分，简化了学习目标和难度。ResNet的结构可以非常快地加速神经网络的训练，模型的准确率也大大提高。同时，ResNet 非常流行，甚至可以直接用在概念网中。
-
 
 - 参考论文：
 
@@ -69,9 +66,10 @@ ResNet（残差神经网络）是由何开明等四位微软研究院中国人�
 - 参考实现：
 
    https://gitee.com/mindspore/models/tree/master/research/cv/FaceQualityAssessment
-   
+
 - 通过Git获取对应commit_id的代码方法如下：
-   ```
+
+   ```sh
    git clone {repository_url}     # 克隆仓库的代码
    cd {repository_name}           # 切换到模型的代码仓目录
    git checkout  {branch}         # 切换到对应分支
@@ -81,27 +79,27 @@ ResNet（残差神经网络）是由何开明等四位微软研究院中国人�
 
 ### 默认配置
 
--   训练数据集预处理 （以300W-LP训练集为例，仅作为用户参考示例。）
+- 训练数据集预处理 （以300W-LP训练集为例，仅作为用户参考示例。）
 
     调整输入图像大小的为（96，96）
-    
+
     将输入的图像设置为RGB模型
 
     将图像格式调整为NCHW
 
     对图像矩阵进行归一化处理
 
--   测试数据集预处理 （以AFLW2000验证集为例，仅作为用户参考示例。）
-    
+- 测试数据集预处理 （以AFLW2000验证集为例，仅作为用户参考示例。）
+
     调整输入图像大小的为（96，96）
 
     将输入的图像设置为RGB模型
 
     将图像格式调整为NCHW
-    
+
     对图像矩阵进行归一化处理
-    
--   训练超参
+
+- 训练超参
     - Batch size: 256（单卡为32，8卡为256）
     - Momentum: 0.9
     - workers 8
@@ -109,8 +107,6 @@ ResNet（残差神经网络）是由何开明等四位微软研究院中国人�
     - lr_scale: 1
     - Weight decay: 0.0001
     - train epoch: 40
-
-
 
 ### 支持特性
 
@@ -120,21 +116,21 @@ ResNet（残差神经网络）是由何开明等四位微软研究院中国人�
 
 ## 准备工作
 
--   **[推理环境准备](#推理环境准备.md)**  
+- **[推理环境准备](#推理环境准备.md)**  
 
--   **[源码介绍](#源码介绍.md)**  
+- **[源码介绍](#源码介绍.md)**  
 
 ### 推理环境准备
 
--   硬件环境、开发环境和运行环境准备请参见[《CANN 软件安装指南](https://support.huawei.com/enterprise/zh/ascend-computing/cann-pid-251168373?category=installation-upgrade)》。
--   宿主机上需要安装Docker并登录[Ascend Hub中心](https://ascendhub.huawei.com/#/home)获取镜像。
+- 硬件环境、开发环境和运行环境准备请参见[《CANN 软件安装指南](https://support.huawei.com/enterprise/zh/ascend-computing/cann-pid-251168373?category=installation-upgrade)》。
+- 宿主机上需要安装Docker并登录[Ascend Hub中心](https://ascendhub.huawei.com/#/home)获取镜像。
 
     当前模型支持的镜像列表如下表所示。
 
     **表 1**  镜像列表
 
     <a name="zh-cn_topic_0000001205858411_table1519011227314"></a>
-    
+
     <table><thead align="left"><tr id="zh-cn_topic_0000001205858411_row0190152218319"><th class="cellrowborder" valign="top" width="55.00000000000001%" id="mcps1.2.4.1.1"><p id="zh-cn_topic_0000001205858411_p1419132211315"><a name="zh-cn_topic_0000001205858411_p1419132211315"></a><a name="zh-cn_topic_0000001205858411_p1419132211315"></a>镜像名称</p>
     </th>
     <th class="cellrowborder" valign="top" width="20%" id="mcps1.2.4.1.2"><p id="zh-cn_topic_0000001205858411_p75071327115313"><a name="zh-cn_topic_0000001205858411_p75071327115313"></a><a name="zh-cn_topic_0000001205858411_p75071327115313"></a>镜像版本</p>
@@ -155,7 +151,7 @@ ResNet（残差神经网络）是由何开明等四位微软研究院中国人�
 
 ### 源码介绍
 
-```
+```txt
 /home/HwHiAiUser/vgg16_for_mindspore_{version}_code
 ├── infer
 │   └── README.md
@@ -188,24 +184,24 @@ ResNet（残差神经网络）是由何开明等四位微软研究院中国人�
 
 ## 推理
 
--   **[准备推理数据](#准备推理数据.md)**  
+- **[准备推理数据](#准备推理数据.md)**  
 
--   **[模型转换](#模型转换.md)**  
+- **[模型转换](#模型转换.md)**  
 
--   **[mxBase推理](#mxBase推理.md)**  
+- **[mxBase推理](#mxBase推理.md)**  
 
--   **[MindX SDK推理](#MindX-SDK推理.md)**  
+- **[MindX SDK推理](#MindX-SDK推理.md)**  
 
 ### 准备推理数据
 
 准备模型转换和模型推理所需目录及数据。
 
-1.  下载源码包。
+1. 下载源码包。
 
     单击“下载模型脚本”和“下载模型”，下载所需软件包。
 
-2.  将源码上传至推理服务器任意目录并解压（如：“/home/HwHiAiUser“）。
-3.  编译镜像 **（需要安装软件依赖时选择）** 。
+2. 将源码上传至推理服务器任意目录并解压（如：“/home/HwHiAiUser“）。
+3. 编译镜像 **（需要安装软件依赖时选择）** 。
 
     **docker build -t** _infer\_image_ **--build-arg FROM\_IMAGE\_NAME=**_base\_image:tag_ **.**
 
@@ -236,9 +232,6 @@ ResNet（残差神经网络）是由何开明等四位微软研究院中国人�
     </tbody>
     </table>
 
-    >![输入图片说明](https://images.gitee.com/uploads/images/2021/0926/181247_df155dc2_8725359.gif "icon-note.gif")**说明：** 
-    >不要遗漏命令结尾的“.“。
-
 4. 准备数据。
 
    （_准备用于推理的图片、数据集、模型文件、代码等，放在同一数据路径中，如：“/home/HwHiAiUser“。_）
@@ -247,7 +240,7 @@ ResNet（残差神经网络）是由何开明等四位微软研究院中国人�
 
    由于后续推理均在容器中进行，因此需要把用于推理的图片、数据集、模型文件、代码等均放在同一数据路径中，后续示例将以“/home/HwHiAiUser“为例。
 
-   ```
+   ```txt
    ...
    ├── infer
    │   └── README.md
@@ -268,7 +261,7 @@ ResNet（残差神经网络）是由何开明等四位微软研究院中国人�
 
    AIR模型可通过“模型训练”后转换生成或通过“下载模型”获取。
 
-5.  启动容器。
+5. 启动容器。
 
     进入“infer“目录，执行以下命令，启动容器。
 
@@ -309,27 +302,22 @@ ResNet（残差神经网络）是由何开明等四位微软研究院中国人�
       --device=/dev/davinci_manager \
     ```
 
-    >![输入图片说明](https://images.gitee.com/uploads/images/2021/0926/181445_0077d606_8725359.gif "icon-note.gif") **说明：** 
-    >MindX SDK开发套件（mxManufacture）已安装在基础镜像中，安装路径：“/usr/local/sdk\_home“。
+>MindX SDK开发套件（mxManufacture）已安装在基础镜像中，安装路径：“/usr/local/sdk\_home“。
 
 ### 模型转换
 
-_在容器内进行模型转换（ **提供模型转换参数、配置，以及转换后的om模型。** 根据模型实际情况，提供多种模型转换方式，提供转换中涉及的参数配置信息，保证最终输出OM模型。）_
-
-（_将模型转换成OM模型。提供通过ATC工具将模型转换为OM模型的方法，提供ATC转换命令和AIPP配置文件_）
-
-1.  准备模型文件。
+1. 准备模型文件。
 
     上传模型训练生成的.air模型文件**或者**使用model目录下的.air文件
 
-2.  模型转换。
+2. 模型转换。
 
     进入“infer/convert“目录进行模型转换，转换详细信息可查看转换脚本和对应的aipp配置文件，**在air2om.sh**脚本文件中，配置相关参数。
 
     ```
     model_path=$1
     output_model_name=$2
-    
+
     atc \
     --input_format=NCHW \
     --framework=1 \
@@ -338,11 +326,11 @@ _在容器内进行模型转换（ **提供模型转换参数、配置，以及�
     --output_type=FP32 \
     --soc_version=Ascend310
     ```
-    
+
     转换命令如下。
-    
+
     **bash air2om.sh** *model_path output_model_name*
-    
+
     **表 1**  参数说明
 
     <a name="table15982121511203"></a>
@@ -375,18 +363,18 @@ _在容器内进行模型转换（ **提供模型转换参数、配置，以及�
 
      ```
      cmake_minimum_required(VERSION 3.14.0)
-   
+
      project(fqa_opencv)
-   
+
      # 将fqa_opencv修改为你的启动文件名。
      set(TARGET fqa_opencv)
-   
+
      add_definitions(-DENABLE_DVPP_INTERFACE)
      add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
      add_definitions(-Dgoogle=mindxsdk_private)
      add_compile_options(-std=c++11 -fPIE -fstack-protector-all -fPIC -Wall)
      add_link_options(-Wl,-z,relro,-z,now,-z,noexecstack -s -pie)
-   
+
      if(NOT DEFINED ENV{ASCEND_HOME})
          message(FATAL_ERROR "please define environment variable:ASCEND_HOME")
      endif()
@@ -398,35 +386,35 @@ _在容器内进行模型转换（ **提供模型转换参数、配置，以及�
      endif()
      set(ACL_INC_DIR $ENV{ASCEND_HOME}/$ENV{ASCEND_VERSION}/$ENV{ARCH_PATTERN}/acllib/include)
      set(ACL_LIB_DIR $ENV{ASCEND_HOME}/$ENV{ASCEND_VERSION}/$ENV{ARCH_PATTERN}/acllib/lib64)
-   
+
      set(MXBASE_ROOT_DIR $ENV{MX_SDK_HOME})
      set(MXBASE_INC ${MXBASE_ROOT_DIR}/include)
      set(MXBASE_LIB_DIR ${MXBASE_ROOT_DIR}/lib)
      set(MXBASE_POST_LIB_DIR ${MXBASE_ROOT_DIR}/lib/modelpostprocessors)
      set(MXBASE_POST_PROCESS_DIR ${MXBASE_ROOT_DIR}/include/MxBase/postprocess/include)
-   
+
      if(DEFINED ENV{MXSDK_OPENSOURCE_DIR})
          set(OPENSOURCE_DIR ${ENV{MXSDK_OPENSOURCE_DIR})
      else()
          set(OPENSOURCE_DIR ${MXBASE_ROOT_DIR}/opensource)
      endif()
-   
+
      include_directories(${ACL_INC_DIR})
      include_directories(${OPENSOURCE_DIR}/include)
      include_directories(${OPENSOURCE_DIR}/include/opencv4)
-   
+
      include_directories(${MXBASE_INC})
      include_directories(${MXBASE_POST_PROCESS_DIR})
-   
+
      link_directories(${ACL_LIB_DIR})
      link_directories(${OPENSOURCE_DIR}/lib)
      link_directories(${MXBASE_LIB_DIR})
      link_directories(${MXBASE_POST_LIB_DIR})
-   
+
      # 将FQA.cpp修改为对应的cpp文件。
      add_executable(${TARGET} main.cpp FQA.cpp)
      target_link_libraries(${TARGET} glog cpprest mxbase opencv_world stdc++fs)
-   
+
      install(TARGETS ${TARGET} RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/)
      ```
 
@@ -624,11 +612,11 @@ _在容器内进行模型转换（ **提供模型转换参数、配置，以及�
 
 4. 查看精度和性能结果。
 
-   - 打开性能统计开关。将“enable_ps”参数设置为true，“ps_interval_time”参数设置为6
+   1. 打开性能统计开关。将“enable_ps”参数设置为true，“ps_interval_time”参数设置为6
 
-   - 执行推理。
+   2. 执行推理。
 
-   - 在日志目录“/home/HwHiAiUser/mxManufacture-2.0.2/logs/”查看性能统计结果。
+   3. 在日志目录“/home/HwHiAiUser/mxManufacture-2.0.2/logs/”查看性能统计结果。
 
      performance—statistics.log.e2e.xxx
      performance—statistics.log.plugin.xxx
@@ -636,17 +624,17 @@ _在容器内进行模型转换（ **提供模型转换参数、配置，以及�
 
 ## 在ModelArts上应用
 
--   **[上传自定义镜像（适用于PyTorch）](#上传自定义镜像（适用于PyTorch）.md)**  
+- **[上传自定义镜像（适用于PyTorch）](#上传自定义镜像（适用于PyTorch）.md)**  
 
--   **[创建OBS桶](#创建OBS桶.md)**  
+- **[创建OBS桶](#创建OBS桶.md)**  
 
--   **[创建算法（适用于MindSpore和TensorFlow）](#创建算法（适用于MindSpore和TensorFlow）.md)**  
+- **[创建算法（适用于MindSpore和TensorFlow）](#创建算法（适用于MindSpore和TensorFlow）.md)**  
 
--   **[创建训练作业](#创建训练作业.md)**  
+- **[创建训练作业](#创建训练作业.md)**  
 
--   **[查看训练任务日志](#查看训练任务日志.md)**  
+- **[查看训练任务日志](#查看训练任务日志.md)**  
 
--   **[迁移学习](#迁移学习.md)**  
+- **[迁移学习](#迁移学习.md)**  
 
 ### 上传自定义镜像（适用于PyTorch）
 
@@ -658,16 +646,15 @@ _在容器内进行模型转换（ **提供模型转换参数、配置，以及�
 
 3. 登录[SWR控制台](https://console.huaweicloud.com/swr/?agencyId=5b5810ebce86453a8f77ded5695374cd%C2%AEion%3Dcn-north-4&locale=zh-cn&region=cn-north-4#/app/dashboard)，上传PyTorch训练镜像。具体请参见[容器引擎客户端上传镜像](https://support.huaweicloud.com/qs-swr/)章节。自定义镜像中需要安装tensorboardX。
 
-   >![输入图片说明](https://images.gitee.com/uploads/images/2021/0926/181809_7444fa5e_8725359.gif "icon-note.gif") **说明：** 
-   >SWR的区域需要与ModelArts所在的区域一致。例如：当前ModelArts在华北-北京四区域。SWR所在区域，请选择华北-北京四。
+>SWR的区域需要与ModelArts所在的区域一致。例如：当前ModelArts在华北-北京四区域。SWR所在区域，请选择华北-北京四。
 
 ### 创建OBS桶
 
-1.  创建桶。
+1. 创建桶。
 
     登录[OBS管理控制台](https://storage.huaweicloud.com/obs)，创建OBS桶。具体请参见[创建桶](https://support.huaweicloud.com/usermanual-obs/obs_03_0306.html)章节。
 
-2.  创建文件夹存放数据。
+2. 创建文件夹存放数据。
 
     创建用于存放数据的文件夹，具体请参见[新建文件夹](https://support.huaweicloud.com/usermanual-obs/obs_03_0316.html)章节。
 
@@ -677,17 +664,17 @@ _在容器内进行模型转换（ **提供模型转换参数、配置，以及�
 
     目录结构示例：
 
-    -   code：存放训练脚本目录
-    -   dataset：存放训练数据集目录，解压**input/training.zip**后上传
-    -   logs：存放训练日志目录
-    -   model：训练生成ckpt模型以及om模型目录
+    - code：存放训练脚本目录
+    - dataset：存放训练数据集目录，解压**input/training.zip**后上传
+    - logs：存放训练日志目录
+    - model：训练生成ckpt模型以及om模型目录
 
 ### 创建算法（适用于MindSpore和TensorFlow）
 
-1.  使用华为云帐号登录[ModelArts管理控制台](https://console.huaweicloud.com/modelarts)，在左侧导航栏中选择“算法管理”。
-2.  在“我的算法管理”界面，单击左上角“创建”，进入“创建算法”页面。
-3.  在“创建算法”页面，填写相关参数，然后单击“提交”。
-    1.  设置算法基本信息。
+1. 使用华为云帐号登录[ModelArts管理控制台](https://console.huaweicloud.com/modelarts)，在左侧导航栏中选择“算法管理”。
+2. 在“我的算法管理”界面，单击左上角“创建”，进入“创建算法”页面。
+3. 在“创建算法”页面，填写相关参数，然后单击“提交”。
+    1. 设置算法基本信息。
 
     2. 设置“创建方式”为“自定义脚本”。
 
@@ -736,17 +723,16 @@ _在容器内进行模型转换（ **提供模型转换参数、配置，以及�
        </tbody>
        </table>
 
-
 ### 创建训练作业
 
-1.  使用华为云帐号登录[ModelArts管理控制台](https://console.huaweicloud.com/modelarts)，在左侧导航栏中选择“训练管理 \> 训练作业（New）”，默认进入“训练作业”列表。
-2.  单击“创建训练作业”，进入“创建训练作业”页面，在该页面填写训练作业相关参数。
+1. 使用华为云帐号登录[ModelArts管理控制台](https://console.huaweicloud.com/modelarts)，在左侧导航栏中选择“训练管理 \> 训练作业（New）”，默认进入“训练作业”列表。
+2. 单击“创建训练作业”，进入“创建训练作业”页面，在该页面填写训练作业相关参数。
 
-    1.  填写基本信息。
+    1. 填写基本信息。
 
         基本信息包含“名称”和“描述”。
 
-    2.  填写作业参数。
+    2. 填写作业参数。
 
         包含数据来源、算法来源等关键信息。本步骤只提供训练任务部分参数配置说明，其他参数配置详情请参见[《ModelArts AI 工程师用户指南](https://support.huaweicloud.com/modelarts/index.html)》中“训练模型（new）”。
 
@@ -802,14 +788,14 @@ _在容器内进行模型转换（ **提供模型转换参数、配置，以及�
         </tbody>
         </table>
 
-3.  单击“提交”，完成训练作业的创建。
+3. 单击“提交”，完成训练作业的创建。
 
     训练作业一般需要运行一段时间，根据您选择的数据量和资源不同，训练时间将耗时几分钟到几十分钟不等。
 
 ### 查看训练任务日志
 
-1.  在ModelArts管理控制台，在左侧导航栏中选择“训练管理 \> 训练作业（New）”，默认进入“训练作业”列表。
-2.  在训练作业列表中，您可以单击作业名称，查看该作业的详情。
+1. 在ModelArts管理控制台，在左侧导航栏中选择“训练管理 \> 训练作业（New）”，默认进入“训练作业”列表。
+2. 在训练作业列表中，您可以单击作业名称，查看该作业的详情。
 
     详情中包含作业的基本信息、训练参数、日志详情和资源占用情况。
 
